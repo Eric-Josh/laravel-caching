@@ -23,8 +23,9 @@ class ArticlesController extends Controller
         }
 
         $key = 'articles_'.$page;
+        $tag = 'articles'; // append user id for real app
 
-        return Cache::remember($key, 5, function () {
+        return Cache::tags($tag)->remember($key, now()->addMinutes(10), function() {
             return Article::orderBy('id','desc')->paginate(5);
         });
     }
@@ -32,11 +33,11 @@ class ArticlesController extends Controller
     // Returns all 500 without Caching 
     public function allWithoutCache()
     {
-        return Article::all();
+        return Article::orderBy('id','desc')->paginate(5);
     }
 
-    // with redis
-    public function withRedis(Request $request)
+    // other cache way
+    public function otherCacheWay(Request $request)
     {
         $page = 1;
 
@@ -46,19 +47,19 @@ class ArticlesController extends Controller
 
         $key = 'articles_'.$page;
 
-        return Cache::remember($key, 5, function () {
-            return Article::paginate(5);
-        });
-    }
+        $articles = Cache::get($key);
 
-    /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function create()
-    {
-        //
+        if(!$articles) {
+            $articles = Article::orderBy('id','desc')->paginate(5);
+
+            Cache::put($key, $articles, now()->addMinutes(10));
+
+            print_r('cached missed');
+        }else {
+            print_r('cached hit');
+        }
+
+        return $articles;
     }
 
     /**
@@ -69,7 +70,23 @@ class ArticlesController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $data = $request->all();
+
+        $article = Article::create([
+            'title' => $data['title'],
+            'description' => $data['description'],
+        ]);
+
+        Cache::tags('articles')->flush();
+
+        Cache::tags('articles')->remember('articles_1', now()->addMinutes(10), function() {
+            return Article::orderBy('id','desc')->paginate(5);
+        });
+
+        return response([
+            'article' => $article,
+            'message' => 'Article added!'
+        ]);
     }
 
     /**

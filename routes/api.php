@@ -21,4 +21,6 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 
 Route::get('/articles', [ArticlesController::class, 'index']);
 
+Route::post('/article', [ArticlesController::class, 'store']);
+
 Route::get('/articles/withoutcache', [ArticlesController::class, 'allWithoutcache']);
