@@ -77,9 +77,12 @@ class ArticlesController extends Controller
             'description' => $data['description'],
         ]);
 
-        Cache::tags('articles')->flush();
+        $key = 'articles_1';
+        $tag = 'articles'; // append user id for real app
 
-        Cache::tags('articles')->remember('articles_1', now()->addMinutes(10), function() {
+        Cache::tags($tag)->flush();
+
+        Cache::tags($tag)->remember($key, now()->addMinutes(10), function() {
             return Article::orderBy('id','desc')->paginate(5);
         });
 
